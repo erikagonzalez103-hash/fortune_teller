@@ -1,0 +1,655 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Your Founder Fortune · Quinta &amp; Co.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&display=swap" rel="stylesheet">
+
+<!-- ============================================================
+     HER TEXAS HOUSE · FOUNDER FORTUNE  ·  Quinta & Co.
+     Fill the four CONFIG constants to go live. Empty PROXY_URL = DEMO MODE.
+     WORKER CONTRACTS:
+       PROXY_URL  POST {firstName,business} -> {text}  ("THE CARD — Name\n\n<prose>")
+       LEAD_URL   POST {firstName,lastName,email,business,card,fortune,code} -> store + email
+       STRIPE_DONATION_URL  Stripe payment link for BankHER chip-in
+     ============================================================ -->
+
+<style>
+  :root{
+    --cream:#FAFAF6; --cream-warm:#F5F2EA; --surface:#FFFFFF;
+    --sage:#6E8B7A; --sage-deep:#4F6B5C; --moss:#3D544A;
+    --sage-whisper:#EEF2EC; --sage-soft:#DFE7E0; --border:#E1DBCC;
+    --heading:#1C1F1B; --body:#2B2F2A; --body-soft:#474B42; --muted:#5F6358;
+    --signal:#8E4234;
+    --display:'Cinzel',Georgia,serif; --text:'Fraunces',Georgia,serif;
+    --maxw:440px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--cream);color:var(--body);font-family:var(--text);font-optical-sizing:auto;
+    font-size:18px;line-height:1.55;-webkit-font-smoothing:antialiased;min-height:100svh;display:flex;justify-content:center;}
+  .frame{width:100%;max-width:var(--maxw);min-height:100svh;padding:26px 26px calc(26px + env(safe-area-inset-bottom));display:flex;flex-direction:column;}
+
+  .sprout{display:inline-block;color:var(--sage);}
+
+  .topline{display:flex;justify-content:space-between;align-items:center;font-family:var(--display);
+    font-size:12.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--body-soft);
+    padding-bottom:18px;margin-bottom:8px;border-bottom:1px solid var(--border);}
+  .topline .r{display:inline-flex;align-items:center;gap:8px;}
+  .topline .sprout{width:17px;}
+
+  .eyebrow{font-family:var(--display);font-size:12.5px;letter-spacing:.26em;text-transform:uppercase;
+    color:var(--sage-deep);display:block;margin:0 0 22px;}
+  .eyebrow::after{content:"";display:block;width:34px;height:1px;background:var(--sage);margin-top:10px;}
+
+  h1.display{font-family:var(--text);font-weight:400;font-size:38px;line-height:1.1;letter-spacing:-.01em;color:var(--heading);margin:0 0 14px;}
+  h1.display em{font-style:italic;color:var(--moss);}
+  .lede{font-size:19px;color:var(--body-soft);margin:0 0 26px;}
+
+  .footer{margin-top:auto;padding-top:20px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:center;gap:8px;
+    font-family:var(--display);font-size:11.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);}
+  .footer .sprout{width:15px;color:var(--muted);}
+
+  .screen{display:none;flex:1;flex-direction:column;animation:rise .5s ease both;}
+  .screen.is-active{display:flex;}
+  @keyframes rise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+  .grow{flex:1;} .center{flex:1;display:flex;flex-direction:column;justify-content:center;}
+
+  .btn{appearance:none;border:none;cursor:pointer;width:100%;font-family:var(--display);
+    font-size:13.5px;letter-spacing:.18em;text-transform:uppercase;padding:18px 20px;border-radius:3px;
+    background:var(--sage-deep);color:var(--cream);transition:background .2s,transform .12s;}
+  .btn:hover{background:#445d50;} .btn:active{transform:translateY(1px);}
+  .btn.moss{background:var(--moss);} .btn.moss:hover{background:#314537;}
+  .btn.ghost{background:transparent;color:var(--sage-deep);border:1px solid var(--sage-soft);}
+  .btn.ghost:hover{background:var(--sage-whisper);}
+  .btn:focus-visible{outline:2px solid var(--sage-deep);outline-offset:3px;}
+  .btn[disabled]{opacity:.5;cursor:default;}
+
+  label.field{display:block;margin:0 0 22px;}
+  .field-label{font-family:var(--display);font-size:12.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--body-soft);display:block;margin-bottom:8px;}
+  .input{width:100%;font-family:var(--text);font-size:20px;color:var(--body);background:transparent;border:none;border-bottom:1.5px solid var(--border);padding:10px 2px;}
+  .input::placeholder{color:#A8A294;font-style:italic;}
+  .input:focus{outline:none;border-bottom-color:var(--sage);}
+  .hint{font-size:16px;color:var(--body-soft);font-style:italic;margin:10px 0 0;}
+  .err{color:var(--signal);font-size:15px;margin:8px 0 0;min-height:1.2em;}
+
+  .table-art{display:block;width:100%;max-width:300px;margin:8px auto 4px;color:var(--sage);}
+
+  .reading-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;}
+  .cloth{width:100%;max-width:300px;margin:0 auto -14px;color:var(--sage-soft);}
+  .card3d{width:250px;height:392px;perspective:1400px;margin:0 auto;}
+  .card-inner{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform 1.05s cubic-bezier(.2,.72,.2,1);}
+  .card3d.is-flipped .card-inner{transform:rotateY(180deg);}
+  .card-back,.card-front{position:absolute;inset:0;-webkit-backface-visibility:hidden;backface-visibility:hidden;
+    border-radius:9px;border:1.5px solid var(--moss);display:flex;flex-direction:column;align-items:center;overflow:hidden;}
+  .frame-line{position:absolute;inset:8px;border:1px solid var(--sage-soft);border-radius:5px;pointer-events:none;}
+  .card-back{background:var(--cream-warm);justify-content:center;}
+  .card-back .back-art{width:120px;height:auto;color:var(--sage-deep);}
+  .card-front{transform:rotateY(180deg);background:var(--surface);justify-content:center;padding:18px 16px;}
+  .queen{width:100%;height:100%;color:var(--moss);}
+
+  .reading-stage.is-loading .card-inner{animation:breathe 2.4s ease-in-out infinite;}
+  @keyframes breathe{0%,100%{transform:translateY(0);opacity:.92;}50%{transform:translateY(-5px);opacity:1;}}
+  .status{font-family:var(--display);font-size:12.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);margin:24px 0 0;min-height:1.4em;}
+  .reading-stage:not(.is-loading) .status{display:none;}
+
+  .reading-text{margin-top:28px;text-align:left;}
+  .reading-text[hidden]{display:none;}
+  .card-name{font-family:var(--display);font-weight:600;font-size:23px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--moss);text-align:center;line-height:1.2;margin:0 0 22px;}
+  .reading-text p{font-size:20.5px;line-height:1.56;color:var(--body);margin:0 0 14px;}
+  .reading-text .nm{font-style:italic;color:var(--moss);}
+  .reading-text .future{margin-bottom:0;}
+  .reading-text .bridge{border-left:2px solid var(--sage);padding:2px 0 2px 18px;margin-top:26px;}
+  .reading-text .bridge p{font-size:19px;font-style:italic;line-height:1.5;color:var(--body);margin:0;}
+
+  .code-card{text-align:center;background:var(--cream-warm);border:1px dashed var(--sage);border-radius:5px;padding:22px;margin-bottom:14px;}
+  .code-card .k{font-family:var(--display);font-size:12.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--body-soft);}
+  .code-card .v{font-family:var(--display);font-weight:600;font-size:32px;letter-spacing:.16em;color:var(--moss);margin-top:9px;}
+  .code-cta{font-family:var(--text);font-style:italic;font-size:15.5px;line-height:1.4;color:var(--body-soft);margin-top:12px;}
+  .code-cta strong{font-style:normal;font-weight:600;color:var(--moss);}
+  .sent{font-family:var(--text);font-style:italic;font-size:18px;color:var(--body-soft);text-align:center;margin:4px 0 28px;}
+
+  .give{background:var(--sage-whisper);border:1px solid var(--sage-soft);border-top:3px solid var(--moss);border-radius:5px;padding:26px 24px;}
+  .give h3{font-family:var(--text);font-style:italic;font-weight:500;font-size:27px;line-height:1.12;color:var(--heading);margin:0 0 12px;}
+  .give-cta{font-size:17px;line-height:1.55;color:var(--body);margin:0 0 18px;}
+  .amounts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+  .amt{appearance:none;cursor:pointer;font-family:var(--text);font-weight:500;font-size:17px;color:var(--moss);
+    background:var(--surface);border:1px solid var(--sage);border-radius:4px;padding:15px 6px;transition:.15s;}
+  .amt:hover{background:var(--moss);color:var(--cream);border-color:var(--moss);}
+  .amt:focus-visible{outline:2px solid var(--sage-deep);outline-offset:2px;}
+  .give-method-q{font-size:17px;color:var(--body);text-align:center;margin:0 0 16px;}
+  .give-method-q strong{color:var(--moss);font-weight:600;}
+  .give-change{appearance:none;background:none;border:none;cursor:pointer;display:block;margin:16px auto 0;
+    font-family:var(--text);font-style:italic;font-size:15px;color:var(--body-soft);}
+  .give-change:hover{color:var(--moss);}
+  .give-qr{text-align:center;}
+  .qr-box{display:flex;align-items:center;justify-content:center;min-height:184px;margin:0 auto 14px;}
+  .qr-box img,.qr-box canvas{border-radius:6px;}
+  .qr-cap{font-size:16px;color:var(--body-soft);line-height:1.4;margin:0 0 16px;}
+  .give-thanks{font-family:var(--text);font-style:italic;font-size:16.5px;color:var(--moss);text-align:center;margin:8px 0 0;}
+  .give-fine{font-size:13.5px;color:var(--muted);text-align:center;margin:16px 0 0;}
+  .note{font-size:14.5px;color:var(--body-soft);background:var(--cream-warm);border:1px solid var(--border);border-radius:3px;padding:10px 12px;margin:0 0 14px;}
+
+  @media (prefers-reduced-motion:reduce){
+    .screen{animation:none;} .card-inner{transition:none;} .reading-stage.is-loading .card-inner{animation:none;}
+  }
+  @media (min-width:441px){.frame{border-left:1px solid var(--border);border-right:1px solid var(--border);}}
+</style>
+</head>
+<body>
+
+<!-- the real brand sprout, defined once and reused everywhere -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="sprout" viewBox="0 0 18 15">
+    <g fill="none" stroke="currentColor" stroke-width="0.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9 8.5 V13.5"/>
+      <path d="M9 8.5 C6.5 7.9 2.8 6 1 1.1 C4 0 7.8 2.9 9 8.5 Z"/>
+      <path d="M9 8.5 C11.5 7.9 15.2 6 17 1.1 C14 0 10.2 2.9 9 8.5 Z"/>
+      <circle cx="9" cy="3.5" r="0.95" fill="currentColor" stroke="none"/>
+    </g>
+  </symbol>
+</svg>
+
+<div class="frame">
+
+  <div class="topline">
+    <span>Quinta &amp; Co.</span>
+    <span class="r">Her Texas House
+      <svg class="sprout" viewBox="0 0 18 15"><use href="#sprout" width="18" height="15"/></svg>
+    </span>
+  </div>
+
+  <div id="lang-pick" style="display:flex;gap:12px;justify-content:flex-end;align-items:center;margin-top:8px;font:600 12px/1 'Cinzel',serif;letter-spacing:.1em;text-transform:uppercase;">
+    <button type="button" data-lang="en" style="background:none;border:none;color:var(--sage-deep);cursor:pointer;font:inherit;letter-spacing:inherit;text-transform:inherit;padding:4px 2px;">English</button>
+    <span style="color:var(--sage);opacity:.45;">·</span>
+    <button type="button" data-lang="es" style="background:none;border:none;color:var(--sage-deep);cursor:pointer;font:inherit;letter-spacing:inherit;text-transform:inherit;padding:4px 2px;opacity:.45;">Español</button>
+  </div>
+
+  <!-- 1 · INTRO -->
+  <section class="screen is-active" id="s-intro">
+    <div class="center">
+      <span class="eyebrow" data-i18n="eyebrow_intro">A reading for founders</span>
+      <h1 class="display" data-i18n-html="h1_intro">Your Founder <em>Fortune</em></h1>
+      <p class="lede" data-i18n="lede_intro">One question about your business. A card turned over. A small gift to begin.</p>
+      <svg class="table-art" viewBox="0 0 300 168" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 138 C70 124 230 124 286 138"/>
+        <path d="M22 150 C80 140 220 140 278 150" opacity=".55"/>
+        <rect x="118" y="78" width="50" height="74" rx="6" fill="#F5F2EA"/>
+        <rect x="124" y="72" width="50" height="74" rx="6" fill="#F5F2EA"/>
+        <rect x="130" y="66" width="50" height="74" rx="6" fill="#F5F2EA"/>
+        <rect x="138" y="76" width="34" height="50" rx="3" opacity=".5"/>
+        <rect x="44" y="96" width="16" height="48" rx="2" fill="#F5F2EA"/>
+        <path d="M52 96 C52 90 56 88 52 82 C49 87 52 90 52 96"/>
+        <use href="#sprout" x="228" y="84" width="26" height="22" style="color:var(--sage)"/>
+        <g opacity=".8"><path d="M96 40v10M91 45h10"/><path d="M208 30v8M204 34h8"/><path d="M150 26v8M146 30h8"/></g>
+      </svg>
+    </div>
+    <button class="btn" id="go-ask" data-i18n="btn_draw1">Draw your card</button>
+  </section>
+
+  <!-- 2 · ASK -->
+  <section class="screen" id="s-ask">
+    <span class="eyebrow" data-i18n="eyebrow_ask">First, the cards need a name</span>
+    <h1 class="display" style="font-size:29px;" data-i18n-html="h1_ask">Tell me about<br>your business.</h1>
+    <div style="margin-top:10px;">
+      <label class="field">
+        <span class="field-label" data-i18n="label_first">Your first name</span>
+        <input class="input" id="in-firstname" type="text" autocomplete="given-name" placeholder="e.g. Maya" data-i18n-ph="ph_first" />
+      </label>
+      <label class="field">
+        <span class="field-label" data-i18n="label_build">In a few words, what do you build?</span>
+        <input class="input" id="in-business" type="text" autocomplete="off" placeholder="e.g. a climate-tech startup" data-i18n-ph="ph_build" />
+      </label>
+      <p class="err" id="ask-err"></p>
+    </div>
+    <div class="grow"></div>
+    <button class="btn" id="go-draw" data-i18n="btn_read">Read my fortune</button>
+  </section>
+
+  <!-- 3 · READING -->
+  <section class="screen" id="s-reading">
+    <div class="reading-stage is-loading" id="stage">
+      <svg class="cloth" viewBox="0 0 300 40" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M10 14 C70 2 230 2 290 14"/></svg>
+      <div class="card3d" id="card3d">
+        <div class="card-inner">
+          <div class="card-back">
+            <span class="frame-line"></span>
+            <svg class="back-art" viewBox="0 0 120 188" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M60 18 L102 94 L60 170 L18 94 Z" opacity=".5"/>
+              <circle cx="60" cy="94" r="30"/>
+              <use href="#sprout" x="43" y="78" width="34" height="29"/>
+              <g opacity=".7"><path d="M60 30v8M56 34h8"/><path d="M60 150v8M56 154h8"/><path d="M22 94h8M90 94h8"/></g>
+            </svg>
+          </div>
+          <div class="card-front">
+            <span class="frame-line"></span>
+            <svg class="queen" viewBox="0 0 220 300" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" preserveAspectRatio="xMidYMid meet">
+              <circle cx="110" cy="24" r="10" stroke-width="1.2"/>
+              <use href="#sprout" x="103" y="18" width="14" height="12"/>
+              <g stroke-width="1" opacity=".85">
+                <path d="M82 42v9M77.5 46.5h9M79 43l7 7M86 43l-7 7"/>
+                <path d="M138 42v9M133.5 46.5h9M135 43l7 7M142 43l-7 7"/>
+                <path d="M110 38v7M106.5 41.5h7"/>
+              </g>
+              <g><circle cx="38" cy="98" r="6"/><path d="M38 104v158"/><path d="M31 113h14"/>
+                 <circle cx="182" cy="98" r="6"/><path d="M182 104v158"/><path d="M175 113h14"/></g>
+              <path d="M92 76q18 6 36 0" stroke-width="1.5"/>
+              <path d="M94 76l3-13 6 10 7-14 7 14 6-10 3 13" stroke-width="1.5"/>
+              <circle cx="97" cy="61" r="1.7"/><circle cx="110" cy="56" r="1.9"/><circle cx="123" cy="61" r="1.7"/>
+              <ellipse cx="110" cy="88" rx="14" ry="17"/>
+              <path d="M96 80q-7 17 0 31M124 80q7 17 0 31"/>
+              <path d="M102 86q3.5-2.5 7 0M111 86q3.5-2.5 7 0" stroke-width="1.1"/>
+              <path d="M110 90l-2.5 6.5q2.5 2 5 0" stroke-width="1.1"/>
+              <path d="M104 102q6 4.5 12 0" stroke-width="1.1"/>
+              <path d="M103 104v6M117 104v6"/>
+              <path d="M96 114q14 9 28 0"/>
+              <path d="M96 114C80 118 68 130 62 152"/>
+              <path d="M124 114C140 118 152 130 158 152"/>
+              <path d="M62 152C54 190 50 232 48 262"/>
+              <path d="M158 152C166 190 170 232 172 262"/>
+              <path d="M48 262q62 13 124 0"/>
+              <path d="M110 118V260" opacity=".5"/>
+              <path d="M84 160c4 42 2 80-6 102" opacity=".48"/>
+              <path d="M136 160c-4 42-2 80 6 102" opacity=".48"/>
+              <path d="M76 170q34 11 68 0" opacity=".5"/>
+              <!-- she holds the sprout: real mark on a long stalk -->
+              <use href="#sprout" x="94" y="150" width="32" height="27"/>
+              <path d="M110 175V226" stroke-width="1.5"/>
+              <path d="M97 228q13 8 26 0"/>
+              <path d="M99 228q-2-9 7-11M121 228q2-9-7-11" stroke-width="1.1"/>
+              <path d="M110 122v8" stroke-width="1.1"/><circle cx="110" cy="133" r="3"/>
+              <g fill="currentColor" stroke="none" opacity=".5"><circle cx="72" cy="212" r="1"/><circle cx="148" cy="212" r="1"/><circle cx="82" cy="240" r="1"/><circle cx="138" cy="240" r="1"/><circle cx="110" cy="252" r="1"/></g>
+            </svg>
+          </div>
+        </div>
+      </div>
+      <p class="status" id="status">Reading the cards…</p>
+    </div>
+
+    <div class="reading-text" id="reading-text" hidden>
+      <div class="card-name" id="card-name">—</div>
+      <p class="reading" id="reading-el"></p>
+      <p class="future" id="future-el"></p>
+      <div class="bridge"><p data-i18n-html="bridge">That's what I see in your future — and it begins at Module&nbsp;1. Start there with 25% off, or bring a founder friend and it doubles.</p></div>
+    </div>
+
+    <div class="grow"></div>
+    <button class="btn moss" id="go-gate" hidden style="margin-top:26px;" data-i18n-html="btn_getcode">Get my code &rarr;</button>
+  </section>
+
+  <!-- 4 · GATE -->
+  <section class="screen" id="s-gate">
+    <span class="eyebrow" data-i18n="eyebrow_gate">Where shall I send it?</span>
+    <h1 class="display" style="font-size:27px;" data-i18n-html="h1_gate">Your fortune,<br>and your code.</h1>
+    <p class="lede" style="font-size:18px;margin-bottom:22px;" data-i18n="lede_gate">Both land in your inbox the moment you send.</p>
+    <label class="field">
+      <span class="field-label" data-i18n="label_last">Last name</span>
+      <input class="input" id="in-lastname" type="text" autocomplete="family-name" placeholder="e.g. Rivera" data-i18n-ph="ph_last" />
+    </label>
+    <label class="field">
+      <span class="field-label" data-i18n="label_email">Email</span>
+      <input class="input" id="in-email" type="email" inputmode="email" autocomplete="email" placeholder="you@yourbusiness.com" data-i18n-ph="ph_email" />
+    </label>
+    <p class="err" id="gate-err"></p>
+    <div class="grow"></div>
+    <button class="btn moss" id="go-unlock" data-i18n-html="btn_send">Send my fortune &amp; code</button>
+  </section>
+
+  <!-- 5 · CODE -->
+  <section class="screen" id="s-code">
+    <span class="eyebrow" data-i18n="eyebrow_code">Your code</span>
+    <div class="code-card">
+      <div class="k" data-i18n-html="code_k">25% off Module 1 &nbsp;·&nbsp; 50% with a friend</div>
+      <div class="v" id="code-val">HERHOUSE</div>
+      <div class="code-cta" data-i18n-html="code_cta">Enter it when you join Module 1 at <strong>quintaand.co</strong></div>
+    </div>
+    <p class="sent" id="sent-line" data-i18n="sent_line">One more thing…</p>
+
+    <div class="give">
+      <h3 data-i18n="give_h3">Be the reason she begins.</h3>
+      <p class="give-cta" data-i18n="give_cta">This Sunday, Quinta &amp; Co. writes one check to BankHER — and one woman founder gets her start. No proposal, no pitch deck, no gatekeeper. Add to the check before it's written.</p>
+      <div class="amounts" id="amounts">
+        <button class="amt" type="button" data-amt="5">$5</button>
+        <button class="amt" type="button" data-amt="10">$10</button>
+        <button class="amt" type="button" data-amt="20">$20</button>
+        <button class="amt" type="button" data-amt="50">$50</button>
+        <button class="amt" type="button" data-amt="100">$100</button>
+        <button class="amt" type="button" data-amt="other" data-i18n="amt_other">Other</button>
+      </div>
+
+      <div class="give-method" id="give-method" hidden>
+        <p class="give-method-q" id="give-method-q">Give <strong id="give-method-amt">$20</strong> — how would you like to pay?</p>
+        <button class="btn moss" id="m-scan" data-i18n="btn_scan">Scan with your phone</button>
+        <button class="btn ghost" id="m-payhere" style="margin-top:10px;" data-i18n="btn_payhere">Enter card here</button>
+        <button class="give-change" id="m-change" type="button" data-i18n-html="give_change">← change amount</button>
+      </div>
+
+      <div class="give-qr" id="give-qr" hidden>
+        <div class="qr-box" id="qr-box"></div>
+        <p class="qr-cap" id="qr-cap"></p>
+        <button class="btn ghost" id="qr-done" data-i18n="qr_done">Done</button>
+      </div>
+
+      <p class="give-thanks" id="give-thanks" hidden></p>
+      <p class="give-fine" data-i18n="give_fine">Collected by Quinta &amp; Co., donated to BankHER.</p>
+    </div>
+
+    <div class="grow"></div>
+    <button class="btn ghost" id="go-restart" style="margin-top:16px;" data-i18n-html="btn_next">Next Fortune →</button>
+  </section>
+
+  <div class="footer">
+    <svg class="sprout" viewBox="0 0 18 15"><use href="#sprout" width="18" height="15"/></svg>
+    <span>Quinta &amp; Co. · Quintaand.co</span>
+  </div>
+</div>
+
+<script>/* QR encoder — qrcode-generator (Kazuhiko Arase, MIT); inlined so the kiosk needs no network for the donation QR */
+var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],f={},c=function(t,r){o=function(t){for(var r=new Array(t),e=0;e<t;e+=1){r[e]=new Array(t);for(var n=0;n<t;n+=1)r[e][n]=null}return r}(i=4*e+17),l(0,0),l(i-7,0),l(0,i-7),s(),h(),d(t,r),e>=7&&v(t),null==a&&(a=p(e,n,u)),w(a,r)},l=function(t,r){for(var e=-1;e<=7;e+=1)if(!(t+e<=-1||i<=t+e))for(var n=-1;n<=7;n+=1)r+n<=-1||i<=r+n||(o[t+e][r+n]=0<=e&&e<=6&&(0==n||6==n)||0<=n&&n<=6&&(0==e||6==e)||2<=e&&e<=4&&2<=n&&n<=4)},h=function(){for(var t=8;t<i-8;t+=1)null==o[t][6]&&(o[t][6]=t%2==0);for(var r=8;r<i-8;r+=1)null==o[6][r]&&(o[6][r]=r%2==0)},s=function(){for(var t=B.getPatternPosition(e),r=0;r<t.length;r+=1)for(var n=0;n<t.length;n+=1){var i=t[r],a=t[n];if(null==o[i][a])for(var u=-2;u<=2;u+=1)for(var f=-2;f<=2;f+=1)o[i+u][a+f]=-2==u||2==u||-2==f||2==f||0==u&&0==f}},v=function(t){for(var r=B.getBCHTypeNumber(e),n=0;n<18;n+=1){var a=!t&&1==(r>>n&1);o[Math.floor(n/3)][n%3+i-8-3]=a}for(n=0;n<18;n+=1){a=!t&&1==(r>>n&1);o[n%3+i-8-3][Math.floor(n/3)]=a}},d=function(t,r){for(var e=n<<3|r,a=B.getBCHTypeInfo(e),u=0;u<15;u+=1){var f=!t&&1==(a>>u&1);u<6?o[u][8]=f:u<8?o[u+1][8]=f:o[i-15+u][8]=f}for(u=0;u<15;u+=1){f=!t&&1==(a>>u&1);u<8?o[8][i-u-1]=f:u<9?o[8][15-u-1+1]=f:o[8][15-u-1]=f}o[i-8][8]=!t},w=function(t,r){for(var e=-1,n=i-1,a=7,u=0,f=B.getMaskFunction(r),c=i-1;c>0;c-=2)for(6==c&&(c-=1);;){for(var g=0;g<2;g+=1)if(null==o[n][c-g]){var l=!1;u<t.length&&(l=1==(t[u]>>>a&1)),f(n,c-g)&&(l=!l),o[n][c-g]=l,-1==(a-=1)&&(u+=1,a=7)}if((n+=e)<0||i<=n){n-=e,e=-e;break}}},p=function(t,r,e){for(var n=A.getRSBlocks(t,r),o=b(),i=0;i<e.length;i+=1){var a=e[i];o.put(a.getMode(),4),o.put(a.getLength(),B.getLengthInBits(a.getMode(),t)),a.write(o)}var u=0;for(i=0;i<n.length;i+=1)u+=n[i].dataCount;if(o.getLengthInBits()>8*u)throw"code length overflow. ("+o.getLengthInBits()+">"+8*u+")";for(o.getLengthInBits()+4<=8*u&&o.put(0,4);o.getLengthInBits()%8!=0;)o.putBit(!1);for(;!(o.getLengthInBits()>=8*u||(o.put(236,8),o.getLengthInBits()>=8*u));)o.put(17,8);return function(t,r){for(var e=0,n=0,o=0,i=new Array(r.length),a=new Array(r.length),u=0;u<r.length;u+=1){var f=r[u].dataCount,c=r[u].totalCount-f;n=Math.max(n,f),o=Math.max(o,c),i[u]=new Array(f);for(var g=0;g<i[u].length;g+=1)i[u][g]=255&t.getBuffer()[g+e];e+=f;var l=B.getErrorCorrectPolynomial(c),h=k(i[u],l.getLength()-1).mod(l);for(a[u]=new Array(l.getLength()-1),g=0;g<a[u].length;g+=1){var s=g+h.getLength()-a[u].length;a[u][g]=s>=0?h.getAt(s):0}}var v=0;for(g=0;g<r.length;g+=1)v+=r[g].totalCount;var d=new Array(v),w=0;for(g=0;g<n;g+=1)for(u=0;u<r.length;u+=1)g<i[u].length&&(d[w]=i[u][g],w+=1);for(g=0;g<o;g+=1)for(u=0;u<r.length;u+=1)g<a[u].length&&(d[w]=a[u][g],w+=1);return d}(o,n)};f.addData=function(t,r){var e=null;switch(r=r||"Byte"){case"Numeric":e=M(t);break;case"Alphanumeric":e=x(t);break;case"Byte":e=m(t);break;case"Kanji":e=L(t);break;default:throw"mode:"+r}u.push(e),a=null},f.isDark=function(t,r){if(t<0||i<=t||r<0||i<=r)throw t+","+r;return o[t][r]},f.getModuleCount=function(){return i},f.make=function(){if(e<1){for(var t=1;t<40;t++){for(var r=A.getRSBlocks(t,n),o=b(),i=0;i<u.length;i++){var a=u[i];o.put(a.getMode(),4),o.put(a.getLength(),B.getLengthInBits(a.getMode(),t)),a.write(o)}var g=0;for(i=0;i<r.length;i++)g+=r[i].dataCount;if(o.getLengthInBits()<=8*g)break}e=t}c(!1,function(){for(var t=0,r=0,e=0;e<8;e+=1){c(!0,e);var n=B.getLostPoint(f);(0==e||t>n)&&(t=n,r=e)}return r}())},f.createTableTag=function(t,r){t=t||2;var e="";e+='<table style="',e+=" border-width: 0px; border-style: none;",e+=" border-collapse: collapse;",e+=" padding: 0px; margin: "+(r=void 0===r?4*t:r)+"px;",e+='">',e+="<tbody>";for(var n=0;n<f.getModuleCount();n+=1){e+="<tr>";for(var o=0;o<f.getModuleCount();o+=1)e+='<td style="',e+=" border-width: 0px; border-style: none;",e+=" border-collapse: collapse;",e+=" padding: 0px; margin: 0px;",e+=" width: "+t+"px;",e+=" height: "+t+"px;",e+=" background-color: ",e+=f.isDark(n,o)?"#000000":"#ffffff",e+=";",e+='"/>';e+="</tr>"}return e+="</tbody>",e+="</table>"},f.createSvgTag=function(t,r,e,n){var o={};"object"==typeof arguments[0]&&(t=(o=arguments[0]).cellSize,r=o.margin,e=o.alt,n=o.title),t=t||2,r=void 0===r?4*t:r,(e="string"==typeof e?{text:e}:e||{}).text=e.text||null,e.id=e.text?e.id||"qrcode-description":null,(n="string"==typeof n?{text:n}:n||{}).text=n.text||null,n.id=n.text?n.id||"qrcode-title":null;var i,a,u,c,g=f.getModuleCount()*t+2*r,l="";for(c="l"+t+",0 0,"+t+" -"+t+",0 0,-"+t+"z ",l+='<svg version="1.1" xmlns="http://www.w3.org/2000/svg"',l+=o.scalable?"":' width="'+g+'px" height="'+g+'px"',l+=' viewBox="0 0 '+g+" "+g+'" ',l+=' preserveAspectRatio="xMinYMin meet"',l+=n.text||e.text?' role="img" aria-labelledby="'+y([n.id,e.id].join(" ").trim())+'"':"",l+=">",l+=n.text?'<title id="'+y(n.id)+'">'+y(n.text)+"</title>":"",l+=e.text?'<description id="'+y(e.id)+'">'+y(e.text)+"</description>":"",l+='<rect width="100%" height="100%" fill="white" cx="0" cy="0"/>',l+='<path d="',a=0;a<f.getModuleCount();a+=1)for(u=a*t+r,i=0;i<f.getModuleCount();i+=1)f.isDark(a,i)&&(l+="M"+(i*t+r)+","+u+c);return l+='" stroke="transparent" fill="black"/>',l+="</svg>"},f.createDataURL=function(t,r){t=t||2,r=void 0===r?4*t:r;var e=f.getModuleCount()*t+2*r,n=r,o=e-r;return I(e,e,function(r,e){if(n<=r&&r<o&&n<=e&&e<o){var i=Math.floor((r-n)/t),a=Math.floor((e-n)/t);return f.isDark(a,i)?0:1}return 1})},f.createImgTag=function(t,r,e){t=t||2,r=void 0===r?4*t:r;var n=f.getModuleCount()*t+2*r,o="";return o+="<img",o+=' src="',o+=f.createDataURL(t,r),o+='"',o+=' width="',o+=n,o+='"',o+=' height="',o+=n,o+='"',e&&(o+=' alt="',o+=y(e),o+='"'),o+="/>"};var y=function(t){for(var r="",e=0;e<t.length;e+=1){var n=t.charAt(e);switch(n){case"<":r+="&lt;";break;case">":r+="&gt;";break;case"&":r+="&amp;";break;case'"':r+="&quot;";break;default:r+=n}}return r};return f.createASCII=function(t,r){if((t=t||1)<2)return function(t){t=void 0===t?2:t;var r,e,n,o,i,a=1*f.getModuleCount()+2*t,u=t,c=a-t,g={"██":"█","█ ":"▀"," █":"▄","  ":" "},l={"██":"▀","█ ":"▀"," █":" ","  ":" "},h="";for(r=0;r<a;r+=2){for(n=Math.floor((r-u)/1),o=Math.floor((r+1-u)/1),e=0;e<a;e+=1)i="█",u<=e&&e<c&&u<=r&&r<c&&f.isDark(n,Math.floor((e-u)/1))&&(i=" "),u<=e&&e<c&&u<=r+1&&r+1<c&&f.isDark(o,Math.floor((e-u)/1))?i+=" ":i+="█",h+=t<1&&r+1>=c?l[i]:g[i];h+="\n"}return a%2&&t>0?h.substring(0,h.length-a-1)+Array(a+1).join("▀"):h.substring(0,h.length-1)}(r);t-=1,r=void 0===r?2*t:r;var e,n,o,i,a=f.getModuleCount()*t+2*r,u=r,c=a-r,g=Array(t+1).join("██"),l=Array(t+1).join("  "),h="",s="";for(e=0;e<a;e+=1){for(o=Math.floor((e-u)/t),s="",n=0;n<a;n+=1)i=1,u<=n&&n<c&&u<=e&&e<c&&f.isDark(o,Math.floor((n-u)/t))&&(i=0),s+=i?g:l;for(o=0;o<t;o+=1)h+=s+"\n"}return h.substring(0,h.length-1)},f.renderTo2dContext=function(t,r){r=r||2;for(var e=f.getModuleCount(),n=0;n<e;n++)for(var o=0;o<e;o++)t.fillStyle=f.isDark(n,o)?"black":"white",t.fillRect(o*r,n*r,r,r)},f};t.stringToBytes=(t.stringToBytesFuncs={default:function(t){for(var r=[],e=0;e<t.length;e+=1){var n=t.charCodeAt(e);r.push(255&n)}return r}}).default,t.createStringToBytes=function(t,r){var e=function(){for(var e=S(t),n=function(){var t=e.read();if(-1==t)throw"eof";return t},o=0,i={};;){var a=e.read();if(-1==a)break;var u=n(),f=n()<<8|n();i[String.fromCharCode(a<<8|u)]=f,o+=1}if(o!=r)throw o+" != "+r;return i}(),n="?".charCodeAt(0);return function(t){for(var r=[],o=0;o<t.length;o+=1){var i=t.charCodeAt(o);if(i<128)r.push(i);else{var a=e[t.charAt(o)];"number"==typeof a?(255&a)==a?r.push(a):(r.push(a>>>8),r.push(255&a)):r.push(n)}}return r}};var r,e,n,o,i,a=1,u=2,f=4,c=8,g={L:1,M:0,Q:3,H:2},l=0,h=1,s=2,v=3,d=4,w=5,p=6,y=7,B=(r=[[],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50],[6,30,54],[6,32,58],[6,34,62],[6,26,46,66],[6,26,48,70],[6,26,50,74],[6,30,54,78],[6,30,56,82],[6,30,58,86],[6,34,62,90],[6,28,50,72,94],[6,26,50,74,98],[6,30,54,78,102],[6,28,54,80,106],[6,32,58,84,110],[6,30,58,86,114],[6,34,62,90,118],[6,26,50,74,98,122],[6,30,54,78,102,126],[6,26,52,78,104,130],[6,30,56,82,108,134],[6,34,60,86,112,138],[6,30,58,86,114,142],[6,34,62,90,118,146],[6,30,54,78,102,126,150],[6,24,50,76,102,128,154],[6,28,54,80,106,132,158],[6,32,58,84,110,136,162],[6,26,54,82,110,138,166],[6,30,58,86,114,142,170]],e=1335,n=7973,i=function(t){for(var r=0;0!=t;)r+=1,t>>>=1;return r},(o={}).getBCHTypeInfo=function(t){for(var r=t<<10;i(r)-i(e)>=0;)r^=e<<i(r)-i(e);return 21522^(t<<10|r)},o.getBCHTypeNumber=function(t){for(var r=t<<12;i(r)-i(n)>=0;)r^=n<<i(r)-i(n);return t<<12|r},o.getPatternPosition=function(t){return r[t-1]},o.getMaskFunction=function(t){switch(t){case l:return function(t,r){return(t+r)%2==0};case h:return function(t,r){return t%2==0};case s:return function(t,r){return r%3==0};case v:return function(t,r){return(t+r)%3==0};case d:return function(t,r){return(Math.floor(t/2)+Math.floor(r/3))%2==0};case w:return function(t,r){return t*r%2+t*r%3==0};case p:return function(t,r){return(t*r%2+t*r%3)%2==0};case y:return function(t,r){return(t*r%3+(t+r)%2)%2==0};default:throw"bad maskPattern:"+t}},o.getErrorCorrectPolynomial=function(t){for(var r=k([1],0),e=0;e<t;e+=1)r=r.multiply(k([1,C.gexp(e)],0));return r},o.getLengthInBits=function(t,r){if(1<=r&&r<10)switch(t){case a:return 10;case u:return 9;case f:case c:return 8;default:throw"mode:"+t}else if(r<27)switch(t){case a:return 12;case u:return 11;case f:return 16;case c:return 10;default:throw"mode:"+t}else{if(!(r<41))throw"type:"+r;switch(t){case a:return 14;case u:return 13;case f:return 16;case c:return 12;default:throw"mode:"+t}}},o.getLostPoint=function(t){for(var r=t.getModuleCount(),e=0,n=0;n<r;n+=1)for(var o=0;o<r;o+=1){for(var i=0,a=t.isDark(n,o),u=-1;u<=1;u+=1)if(!(n+u<0||r<=n+u))for(var f=-1;f<=1;f+=1)o+f<0||r<=o+f||0==u&&0==f||a==t.isDark(n+u,o+f)&&(i+=1);i>5&&(e+=3+i-5)}for(n=0;n<r-1;n+=1)for(o=0;o<r-1;o+=1){var c=0;t.isDark(n,o)&&(c+=1),t.isDark(n+1,o)&&(c+=1),t.isDark(n,o+1)&&(c+=1),t.isDark(n+1,o+1)&&(c+=1),0!=c&&4!=c||(e+=3)}for(n=0;n<r;n+=1)for(o=0;o<r-6;o+=1)t.isDark(n,o)&&!t.isDark(n,o+1)&&t.isDark(n,o+2)&&t.isDark(n,o+3)&&t.isDark(n,o+4)&&!t.isDark(n,o+5)&&t.isDark(n,o+6)&&(e+=40);for(o=0;o<r;o+=1)for(n=0;n<r-6;n+=1)t.isDark(n,o)&&!t.isDark(n+1,o)&&t.isDark(n+2,o)&&t.isDark(n+3,o)&&t.isDark(n+4,o)&&!t.isDark(n+5,o)&&t.isDark(n+6,o)&&(e+=40);var g=0;for(o=0;o<r;o+=1)for(n=0;n<r;n+=1)t.isDark(n,o)&&(g+=1);return e+=Math.abs(100*g/r/r-50)/5*10},o),C=function(){for(var t=new Array(256),r=new Array(256),e=0;e<8;e+=1)t[e]=1<<e;for(e=8;e<256;e+=1)t[e]=t[e-4]^t[e-5]^t[e-6]^t[e-8];for(e=0;e<255;e+=1)r[t[e]]=e;var n={glog:function(t){if(t<1)throw"glog("+t+")";return r[t]},gexp:function(r){for(;r<0;)r+=255;for(;r>=256;)r-=255;return t[r]}};return n}();function k(t,r){if(void 0===t.length)throw t.length+"/"+r;var e=function(){for(var e=0;e<t.length&&0==t[e];)e+=1;for(var n=new Array(t.length-e+r),o=0;o<t.length-e;o+=1)n[o]=t[o+e];return n}(),n={getAt:function(t){return e[t]},getLength:function(){return e.length},multiply:function(t){for(var r=new Array(n.getLength()+t.getLength()-1),e=0;e<n.getLength();e+=1)for(var o=0;o<t.getLength();o+=1)r[e+o]^=C.gexp(C.glog(n.getAt(e))+C.glog(t.getAt(o)));return k(r,0)},mod:function(t){if(n.getLength()-t.getLength()<0)return n;for(var r=C.glog(n.getAt(0))-C.glog(t.getAt(0)),e=new Array(n.getLength()),o=0;o<n.getLength();o+=1)e[o]=n.getAt(o);for(o=0;o<t.getLength();o+=1)e[o]^=C.gexp(C.glog(t.getAt(o))+r);return k(e,0).mod(t)}};return n}var A=function(){var t=[[1,26,19],[1,26,16],[1,26,13],[1,26,9],[1,44,34],[1,44,28],[1,44,22],[1,44,16],[1,70,55],[1,70,44],[2,35,17],[2,35,13],[1,100,80],[2,50,32],[2,50,24],[4,25,9],[1,134,108],[2,67,43],[2,33,15,2,34,16],[2,33,11,2,34,12],[2,86,68],[4,43,27],[4,43,19],[4,43,15],[2,98,78],[4,49,31],[2,32,14,4,33,15],[4,39,13,1,40,14],[2,121,97],[2,60,38,2,61,39],[4,40,18,2,41,19],[4,40,14,2,41,15],[2,146,116],[3,58,36,2,59,37],[4,36,16,4,37,17],[4,36,12,4,37,13],[2,86,68,2,87,69],[4,69,43,1,70,44],[6,43,19,2,44,20],[6,43,15,2,44,16],[4,101,81],[1,80,50,4,81,51],[4,50,22,4,51,23],[3,36,12,8,37,13],[2,116,92,2,117,93],[6,58,36,2,59,37],[4,46,20,6,47,21],[7,42,14,4,43,15],[4,133,107],[8,59,37,1,60,38],[8,44,20,4,45,21],[12,33,11,4,34,12],[3,145,115,1,146,116],[4,64,40,5,65,41],[11,36,16,5,37,17],[11,36,12,5,37,13],[5,109,87,1,110,88],[5,65,41,5,66,42],[5,54,24,7,55,25],[11,36,12,7,37,13],[5,122,98,1,123,99],[7,73,45,3,74,46],[15,43,19,2,44,20],[3,45,15,13,46,16],[1,135,107,5,136,108],[10,74,46,1,75,47],[1,50,22,15,51,23],[2,42,14,17,43,15],[5,150,120,1,151,121],[9,69,43,4,70,44],[17,50,22,1,51,23],[2,42,14,19,43,15],[3,141,113,4,142,114],[3,70,44,11,71,45],[17,47,21,4,48,22],[9,39,13,16,40,14],[3,135,107,5,136,108],[3,67,41,13,68,42],[15,54,24,5,55,25],[15,43,15,10,44,16],[4,144,116,4,145,117],[17,68,42],[17,50,22,6,51,23],[19,46,16,6,47,17],[2,139,111,7,140,112],[17,74,46],[7,54,24,16,55,25],[34,37,13],[4,151,121,5,152,122],[4,75,47,14,76,48],[11,54,24,14,55,25],[16,45,15,14,46,16],[6,147,117,4,148,118],[6,73,45,14,74,46],[11,54,24,16,55,25],[30,46,16,2,47,17],[8,132,106,4,133,107],[8,75,47,13,76,48],[7,54,24,22,55,25],[22,45,15,13,46,16],[10,142,114,2,143,115],[19,74,46,4,75,47],[28,50,22,6,51,23],[33,46,16,4,47,17],[8,152,122,4,153,123],[22,73,45,3,74,46],[8,53,23,26,54,24],[12,45,15,28,46,16],[3,147,117,10,148,118],[3,73,45,23,74,46],[4,54,24,31,55,25],[11,45,15,31,46,16],[7,146,116,7,147,117],[21,73,45,7,74,46],[1,53,23,37,54,24],[19,45,15,26,46,16],[5,145,115,10,146,116],[19,75,47,10,76,48],[15,54,24,25,55,25],[23,45,15,25,46,16],[13,145,115,3,146,116],[2,74,46,29,75,47],[42,54,24,1,55,25],[23,45,15,28,46,16],[17,145,115],[10,74,46,23,75,47],[10,54,24,35,55,25],[19,45,15,35,46,16],[17,145,115,1,146,116],[14,74,46,21,75,47],[29,54,24,19,55,25],[11,45,15,46,46,16],[13,145,115,6,146,116],[14,74,46,23,75,47],[44,54,24,7,55,25],[59,46,16,1,47,17],[12,151,121,7,152,122],[12,75,47,26,76,48],[39,54,24,14,55,25],[22,45,15,41,46,16],[6,151,121,14,152,122],[6,75,47,34,76,48],[46,54,24,10,55,25],[2,45,15,64,46,16],[17,152,122,4,153,123],[29,74,46,14,75,47],[49,54,24,10,55,25],[24,45,15,46,46,16],[4,152,122,18,153,123],[13,74,46,32,75,47],[48,54,24,14,55,25],[42,45,15,32,46,16],[20,147,117,4,148,118],[40,75,47,7,76,48],[43,54,24,22,55,25],[10,45,15,67,46,16],[19,148,118,6,149,119],[18,75,47,31,76,48],[34,54,24,34,55,25],[20,45,15,61,46,16]],r=function(t,r){var e={};return e.totalCount=t,e.dataCount=r,e},e={};return e.getRSBlocks=function(e,n){var o=function(r,e){switch(e){case g.L:return t[4*(r-1)+0];case g.M:return t[4*(r-1)+1];case g.Q:return t[4*(r-1)+2];case g.H:return t[4*(r-1)+3];default:return}}(e,n);if(void 0===o)throw"bad rs block @ typeNumber:"+e+"/errorCorrectionLevel:"+n;for(var i=o.length/3,a=[],u=0;u<i;u+=1)for(var f=o[3*u+0],c=o[3*u+1],l=o[3*u+2],h=0;h<f;h+=1)a.push(r(c,l));return a},e}(),b=function(){var t=[],r=0,e={getBuffer:function(){return t},getAt:function(r){var e=Math.floor(r/8);return 1==(t[e]>>>7-r%8&1)},put:function(t,r){for(var n=0;n<r;n+=1)e.putBit(1==(t>>>r-n-1&1))},getLengthInBits:function(){return r},putBit:function(e){var n=Math.floor(r/8);t.length<=n&&t.push(0),e&&(t[n]|=128>>>r%8),r+=1}};return e},M=function(t){var r=a,e=t,n={getMode:function(){return r},getLength:function(t){return e.length},write:function(t){for(var r=e,n=0;n+2<r.length;)t.put(o(r.substring(n,n+3)),10),n+=3;n<r.length&&(r.length-n==1?t.put(o(r.substring(n,n+1)),4):r.length-n==2&&t.put(o(r.substring(n,n+2)),7))}},o=function(t){for(var r=0,e=0;e<t.length;e+=1)r=10*r+i(t.charAt(e));return r},i=function(t){if("0"<=t&&t<="9")return t.charCodeAt(0)-"0".charCodeAt(0);throw"illegal char :"+t};return n},x=function(t){var r=u,e=t,n={getMode:function(){return r},getLength:function(t){return e.length},write:function(t){for(var r=e,n=0;n+1<r.length;)t.put(45*o(r.charAt(n))+o(r.charAt(n+1)),11),n+=2;n<r.length&&t.put(o(r.charAt(n)),6)}},o=function(t){if("0"<=t&&t<="9")return t.charCodeAt(0)-"0".charCodeAt(0);if("A"<=t&&t<="Z")return t.charCodeAt(0)-"A".charCodeAt(0)+10;switch(t){case" ":return 36;case"$":return 37;case"%":return 38;case"*":return 39;case"+":return 40;case"-":return 41;case".":return 42;case"/":return 43;case":":return 44;default:throw"illegal char :"+t}};return n},m=function(r){var e=f,n=t.stringToBytes(r),o={getMode:function(){return e},getLength:function(t){return n.length},write:function(t){for(var r=0;r<n.length;r+=1)t.put(n[r],8)}};return o},L=function(r){var e=c,n=t.stringToBytesFuncs.SJIS;if(!n)throw"sjis not supported.";!function(){var t=n("友");if(2!=t.length||38726!=(t[0]<<8|t[1]))throw"sjis not supported."}();var o=n(r),i={getMode:function(){return e},getLength:function(t){return~~(o.length/2)},write:function(t){for(var r=o,e=0;e+1<r.length;){var n=(255&r[e])<<8|255&r[e+1];if(33088<=n&&n<=40956)n-=33088;else{if(!(57408<=n&&n<=60351))throw"illegal char at "+(e+1)+"/"+n;n-=49472}n=192*(n>>>8&255)+(255&n),t.put(n,13),e+=2}if(e<r.length)throw"illegal char at "+(e+1)}};return i},D=function(){var t=[],r={writeByte:function(r){t.push(255&r)},writeShort:function(t){r.writeByte(t),r.writeByte(t>>>8)},writeBytes:function(t,e,n){e=e||0,n=n||t.length;for(var o=0;o<n;o+=1)r.writeByte(t[o+e])},writeString:function(t){for(var e=0;e<t.length;e+=1)r.writeByte(t.charCodeAt(e))},toByteArray:function(){return t},toString:function(){var r="";r+="[";for(var e=0;e<t.length;e+=1)e>0&&(r+=","),r+=t[e];return r+="]"}};return r},S=function(t){var r=t,e=0,n=0,o=0,i={read:function(){for(;o<8;){if(e>=r.length){if(0==o)return-1;throw"unexpected end of file./"+o}var t=r.charAt(e);if(e+=1,"="==t)return o=0,-1;t.match(/^\s$/)||(n=n<<6|a(t.charCodeAt(0)),o+=6)}var i=n>>>o-8&255;return o-=8,i}},a=function(t){if(65<=t&&t<=90)return t-65;if(97<=t&&t<=122)return t-97+26;if(48<=t&&t<=57)return t-48+52;if(43==t)return 62;if(47==t)return 63;throw"c:"+t};return i},I=function(t,r,e){for(var n=function(t,r){var e=t,n=r,o=new Array(t*r),i={setPixel:function(t,r,n){o[r*e+t]=n},write:function(t){t.writeString("GIF87a"),t.writeShort(e),t.writeShort(n),t.writeByte(128),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(255),t.writeByte(255),t.writeByte(255),t.writeString(","),t.writeShort(0),t.writeShort(0),t.writeShort(e),t.writeShort(n),t.writeByte(0);var r=a(2);t.writeByte(2);for(var o=0;r.length-o>255;)t.writeByte(255),t.writeBytes(r,o,255),o+=255;t.writeByte(r.length-o),t.writeBytes(r,o,r.length-o),t.writeByte(0),t.writeString(";")}},a=function(t){for(var r=1<<t,e=1+(1<<t),n=t+1,i=u(),a=0;a<r;a+=1)i.add(String.fromCharCode(a));i.add(String.fromCharCode(r)),i.add(String.fromCharCode(e));var f,c,g,l=D(),h=(f=l,c=0,g=0,{write:function(t,r){if(t>>>r!=0)throw"length over";for(;c+r>=8;)f.writeByte(255&(t<<c|g)),r-=8-c,t>>>=8-c,g=0,c=0;g|=t<<c,c+=r},flush:function(){c>0&&f.writeByte(g)}});h.write(r,n);var s=0,v=String.fromCharCode(o[s]);for(s+=1;s<o.length;){var d=String.fromCharCode(o[s]);s+=1,i.contains(v+d)?v+=d:(h.write(i.indexOf(v),n),i.size()<4095&&(i.size()==1<<n&&(n+=1),i.add(v+d)),v=d)}return h.write(i.indexOf(v),n),h.write(e,n),h.flush(),l.toByteArray()},u=function(){var t={},r=0,e={add:function(n){if(e.contains(n))throw"dup key:"+n;t[n]=r,r+=1},size:function(){return r},indexOf:function(r){return t[r]},contains:function(r){return void 0!==t[r]}};return e};return i}(t,r),o=0;o<r;o+=1)for(var i=0;i<t;i+=1)n.setPixel(i,o,e(i,o));var a=D();n.write(a);for(var u=function(){var t=0,r=0,e=0,n="",o={},i=function(t){n+=String.fromCharCode(a(63&t))},a=function(t){if(t<0);else{if(t<26)return 65+t;if(t<52)return t-26+97;if(t<62)return t-52+48;if(62==t)return 43;if(63==t)return 47}throw"n:"+t};return o.writeByte=function(n){for(t=t<<8|255&n,r+=8,e+=1;r>=6;)i(t>>>r-6),r-=6},o.flush=function(){if(r>0&&(i(t<<6-r),t=0,r=0),e%3!=0)for(var o=3-e%3,a=0;a<o;a+=1)n+="="},o.toString=function(){return n},o}(),f=a.toByteArray(),c=0;c<f.length;c+=1)u.writeByte(f[c]);return u.flush(),"data:image/gif;base64,"+u};return t}();qrcode.stringToBytesFuncs["UTF-8"]=function(t){return function(t){for(var r=[],e=0;e<t.length;e++){var n=t.charCodeAt(e);n<128?r.push(n):n<2048?r.push(192|n>>6,128|63&n):n<55296||n>=57344?r.push(224|n>>12,128|n>>6&63,128|63&n):(e++,n=65536+((1023&n)<<10|1023&t.charCodeAt(e)),r.push(240|n>>18,128|n>>12&63,128|n>>6&63,128|63&n))}return r}(t)},function(t){"function"==typeof define&&define.amd?define([],t):"object"==typeof exports&&(module.exports=t())}(function(){return qrcode});
+</script>
+<script>
+const CONFIG = {
+  DISCOUNT_CODE:'HERHOUSE',
+  PROXY_URL:'',
+  LEAD_URL:'',
+  HEARTBEAT_URL:'',       // Worker /heartbeat — kiosk pings every ~60s so you're alerted if it goes silent
+  DONATE_URL:'',          // Worker route: POST {amount} -> {url} (Stripe Checkout). Empty -> links or demo.
+  STRIPE_LINKS:{},        // optional per-amount Stripe Payment Links, e.g. {5:'https://...',10:'https://...'}
+  STRIPE_DONATION_URL:'', // optional single custom-amount link (used for "Other" + fallback)
+  IDLE_SECONDS:60,        // return to the start screen after this many seconds of no touch
+  SITE_URL:'https://quintaand.co'
+};
+const DEMO = !CONFIG.PROXY_URL;
+
+let lang='en';
+const STR={
+ en:{
+  eyebrow_intro:"A reading for founders",
+  lede_intro:"One question about your business. A card turned over. A small gift to begin.",
+  btn_draw1:"Draw your card",
+  eyebrow_ask:"First, the cards need a name",
+  label_first:"Your first name",
+  label_build:"In a few words, what do you build?",
+  btn_read:"Read my fortune",
+  eyebrow_gate:"Where shall I send it?",
+  lede_gate:"Both land in your inbox the moment you send.",
+  label_last:"Last name",
+  label_email:"Email",
+  eyebrow_code:"Your code",
+  sent_line:"One more thing…",
+  give_h3:"Be the reason she begins.",
+  give_cta:"This Sunday, Quinta & Co. writes one check to BankHER — and one woman founder gets her start. No proposal, no pitch deck, no gatekeeper. Add to the check before it's written.",
+  amt_other:"Other",
+  btn_scan:"Scan with your phone",
+  btn_payhere:"Enter card here",
+  qr_done:"Done",
+  give_fine:"Collected by Quinta & Co., donated to BankHER.",
+  h1_intro:'Your Founder <em>Fortune</em>',
+  h1_ask:'Tell me about<br>your business.',
+  bridge:"That's what I see in your future — and it begins at Module&nbsp;1. Start there with 25% off, or bring a founder friend and it doubles.",
+  btn_getcode:'Get my code &rarr;',
+  h1_gate:'Your fortune,<br>and your code.',
+  btn_send:'Send my fortune &amp; code',
+  code_k:'25% off Module 1 &nbsp;·&nbsp; 50% with a friend',
+  code_cta:'Enter it when you join Module 1 at <strong>quintaand.co</strong>',
+  give_change:'← change amount',
+  btn_next:'Next Fortune →',
+  ph_first:"e.g. Maya",
+  ph_build:"e.g. a climate-tech startup",
+  ph_last:"e.g. Rivera",
+  ph_email:"you@yourbusiness.com",
+  status_cycle:['Reading the cards…','Naming what I see…','Turning your card…'],
+  err_firstname:"The cards need your first name.",
+  err_business:"Tell me what you build — a few words is plenty.",
+  err_lastname:"Your last name, so we know whose fortune this is.",
+  err_email:"That email doesn't look right — mind checking it?",
+  sending:"Sending…",
+  btn_send_plain:"Send my fortune & code",
+  gift_lc:"your gift",
+  qr_fail:"Couldn't draw the code — use \u201CEnter card here\u201D instead.",
+  methodQ:function(l){return 'Give <strong>'+l+'</strong> — how would you like to pay?';},
+  qrCap:function(l,d){return 'Scan to give '+l+' on your phone.'+(d?' (Demo — points to your site until Stripe is set.)':'');},
+  thanks:function(a){var l=a==='other'?'Your gift':'$'+a;return l+" is on its way to someone's beginning. Thank you.";}
+ },
+ es:{
+  eyebrow_intro:"Una lectura para emprendedoras",
+  lede_intro:"Una pregunta sobre tu negocio. Una carta revelada. Un pequeño regalo para empezar.",
+  btn_draw1:"Saca tu carta",
+  eyebrow_ask:"Primero, las cartas necesitan un nombre",
+  label_first:"Tu nombre",
+  label_build:"En pocas palabras, ¿qué construyes?",
+  btn_read:"Lee mi fortuna",
+  eyebrow_gate:"¿A dónde te lo envío?",
+  lede_gate:"Ambos llegan a tu correo apenas lo envíes.",
+  label_last:"Apellido",
+  label_email:"Correo",
+  eyebrow_code:"Tu código",
+  sent_line:"Una cosa más…",
+  give_h3:"Sé la razón por la que ella empieza.",
+  give_cta:"Este domingo, Quinta & Co. le extiende un cheque a BankHER — y una mujer emprendedora consigue su comienzo. Sin propuesta, sin pitch deck, sin intermediarios. Suma al cheque antes de que se firme.",
+  amt_other:"Otro",
+  btn_scan:"Escanea con tu teléfono",
+  btn_payhere:"Ingresa tu tarjeta aquí",
+  qr_done:"Listo",
+  give_fine:"Recaudado por Quinta & Co., donado a BankHER.",
+  h1_intro:'Tu <em>Fortuna</em> Emprendedora',
+  h1_ask:'Cuéntame sobre<br>tu negocio.',
+  bridge:"Eso es lo que veo en tu futuro — y comienza en el Módulo&nbsp;1. Empieza ahí con 25% de descuento, o trae a una amiga emprendedora y se duplica.",
+  btn_getcode:'Quiero mi código &rarr;',
+  h1_gate:'Tu fortuna,<br>y tu código.',
+  btn_send:'Enviar mi fortuna y código',
+  code_k:'25% de descuento en el Módulo 1 &nbsp;·&nbsp; 50% con una amiga',
+  code_cta:'Úsalo cuando te inscribas en el Módulo 1 en <strong>quintaand.co</strong>',
+  give_change:'← cambiar monto',
+  btn_next:'Siguiente fortuna →',
+  ph_first:"p. ej. Maya",
+  ph_build:"p. ej. una startup de clima",
+  ph_last:"p. ej. Rivera",
+  ph_email:"tu@tunegocio.com",
+  status_cycle:['Leyendo las cartas…','Nombrando lo que veo…','Revelando tu carta…'],
+  err_firstname:"Las cartas necesitan tu nombre.",
+  err_business:"Cuéntame qué construyes — con pocas palabras basta.",
+  err_lastname:"Tu apellido, para saber de quién es esta fortuna.",
+  err_email:"Ese correo no se ve bien — ¿lo revisas?",
+  sending:"Enviando…",
+  btn_send_plain:"Enviar mi fortuna y código",
+  gift_lc:"tu aporte",
+  qr_fail:"No se pudo generar el código — usa \u00ABIngresa tu tarjeta aquí\u00BB.",
+  methodQ:function(l){return 'Da <strong>'+l+'</strong> — ¿cómo quieres pagar?';},
+  qrCap:function(l,d){return 'Escanea para dar '+l+' desde tu teléfono.'+(d?' (Demo — apunta a tu sitio hasta configurar Stripe.)':'');},
+  thanks:function(a){var l=a==='other'?'Tu aporte':'$'+a;return l+' ya va camino al comienzo de alguien. Gracias.';}
+ }
+};
+function applyLang(){
+  const d=STR[lang];
+  document.querySelectorAll('[data-i18n]').forEach(el=>{const k=el.getAttribute('data-i18n');if(d[k]!=null)el.textContent=d[k];});
+  document.querySelectorAll('[data-i18n-html]').forEach(el=>{const k=el.getAttribute('data-i18n-html');if(d[k]!=null)el.innerHTML=d[k];});
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=>{const k=el.getAttribute('data-i18n-ph');if(d[k]!=null)el.setAttribute('placeholder',d[k]);});
+  document.documentElement.lang=lang;
+}
+function updateLangUI(){const p=document.getElementById('lang-pick');if(!p)return;p.querySelectorAll('[data-lang]').forEach(b=>b.style.opacity=(b.dataset.lang===lang?'1':'.45'));}
+(function(){const p=document.getElementById('lang-pick');if(p)p.addEventListener('click',e=>{const b=e.target.closest('[data-lang]');if(!b)return;lang=b.dataset.lang;updateLangUI();applyLang();});})();
+applyLang(); updateLangUI();
+
+
+const state={firstName:'',lastName:'',email:'',business:'',card:'',reading:'',future:''};
+const $=id=>document.getElementById(id);
+const reduceMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const show=id=>{document.querySelectorAll('.screen').forEach(s=>s.classList.remove('is-active'));$(id).classList.add('is-active');window.scrollTo(0,0);};
+
+$('go-ask').onclick=()=>show('s-ask');
+
+$('go-draw').onclick=async()=>{
+  const fn=$('in-firstname').value.trim(), biz=$('in-business').value.trim();
+  if(!fn){$('ask-err').textContent=STR[lang].err_firstname;return;}
+  if(!biz){$('ask-err').textContent=STR[lang].err_business;return;}
+  state.firstName=fn; state.business=biz;
+  $('card3d').classList.remove('is-flipped');
+  $('stage').classList.add('is-loading');
+  $('reading-text').hidden=true; $('go-gate').hidden=true;
+  show('s-reading'); cycleStatus();
+  try{ const f=await getFortune(fn,biz); Object.assign(state,f); }
+  catch(_){ Object.assign(state, demoFortune(fn,biz,lang)); }
+  revealCard();
+};
+
+$('go-gate').onclick=()=>show('s-gate');
+
+$('go-unlock').onclick=async()=>{
+  const ln=$('in-lastname').value.trim(), em=$('in-email').value.trim();
+  if(!ln){$('gate-err').textContent=STR[lang].err_lastname;return;}
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){$('gate-err').textContent=STR[lang].err_email;return;}
+  state.lastName=ln; state.email=em;
+  const btn=$('go-unlock'); btn.disabled=true; btn.textContent=STR[lang].sending;
+  await sendLead();
+  $('code-val').textContent=CONFIG.DISCOUNT_CODE;
+  show('s-code'); btn.disabled=false; btn.textContent=STR[lang].btn_send_plain;
+};
+
+let selectedAmount=null, onQR=false;
+const amtLabel=a=>a==='other'?STR[lang].gift_lc:'$'+a;
+
+$('amounts').addEventListener('click',e=>{const b=e.target.closest('.amt');if(!b)return;selectedAmount=b.dataset.amt;openMethod();});
+function openMethod(){
+  $('amounts').style.display='none'; $('give-qr').hidden=true; onQR=false;
+  $('give-method-q').innerHTML=STR[lang].methodQ(amtLabel(selectedAmount));
+  $('give-method').hidden=false;
+}
+$('m-change').onclick=()=>{$('give-method').hidden=true;$('amounts').style.display='';};
+
+$('m-payhere').onclick=async()=>{
+  const url=await resolveCheckoutUrl(selectedAmount);
+  if(url){window.location.href=url;return;}   // same-tab Stripe; its success/cancel URLs return them home
+  thankAndReturn(selectedAmount);             // demo
+};
+$('m-scan').onclick=async()=>{
+  const url=await resolveCheckoutUrl(selectedAmount);
+  showQR(url||CONFIG.SITE_URL, selectedAmount, !url);
+};
+$('qr-done').onclick=()=>thankAndReturn(selectedAmount);
+
+async function resolveCheckoutUrl(amt){
+  if(CONFIG.DONATE_URL){try{const r=await fetch(CONFIG.DONATE_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({amount:amt})});const d=await r.json();if(d&&d.url)return d.url;}catch(_){}}
+  if(amt!=='other'&&CONFIG.STRIPE_LINKS&&CONFIG.STRIPE_LINKS[amt])return CONFIG.STRIPE_LINKS[amt];
+  if(CONFIG.STRIPE_DONATION_URL)return CONFIG.STRIPE_DONATION_URL;
+  return null;
+}
+function renderQR(text){
+  if(typeof qrcode==='undefined') return null;
+  const qr=qrcode(0,'M'); qr.addData(text); qr.make();
+  const n=qr.getModuleCount(), m=2, size=n+m*2;
+  let rects='';
+  for(let r=0;r<n;r++)for(let c=0;c<n;c++) if(qr.isDark(r,c)) rects+='<rect x="'+(c+m)+'" y="'+(r+m)+'" width="1" height="1"/>';
+  return '<svg viewBox="0 0 '+size+' '+size+'" width="184" height="184" shape-rendering="crispEdges" role="img" aria-label="Donation QR code"><rect width="'+size+'" height="'+size+'" fill="#FAFAF6"/><g fill="#3D544A">'+rects+'</g></svg>';
+}
+function showQR(url,amt,isDemo){
+  $('give-method').hidden=true; $('give-qr').hidden=false; onQR=true;
+  const svg=renderQR(url);
+  $('qr-box').innerHTML = svg || ('<span style="font-size:14px;color:#474B42">'+STR[lang].qr_fail+'</span>');
+  $('qr-cap').textContent=STR[lang].qrCap(amtLabel(amt),isDemo);
+  armReturn();
+}
+function thankAndReturn(amt){
+  $('give-method').hidden=true; $('give-qr').hidden=true; $('amounts').style.display='none'; onQR=false;
+  const label=amt==='other'?'Your gift':'$'+amt;
+  $('give-thanks').hidden=false;
+  $('give-thanks').textContent=STR[lang].thanks(amt);
+  returningSoon=true; armReturn();
+}
+
+/* ---- auto-return to start, so the kiosk resets itself between people ---- */
+let idleTimer, returningSoon=false;
+const IDLE_MS=(CONFIG.IDLE_SECONDS||60)*1000, THANKS_MS=7000, QR_MS=150000;
+function armReturn(){clearTimeout(idleTimer);idleTimer=setTimeout(goHome, returningSoon?THANKS_MS:(onQR?QR_MS:IDLE_MS));}
+function goHome(){
+  returningSoon=false; onQR=false; selectedAmount=null;
+  lang='en'; updateLangUI(); applyLang();
+  ['in-firstname','in-business','in-lastname','in-email'].forEach(i=>$(i).value='');
+  $('ask-err').textContent=''; $('gate-err').textContent='';
+  $('amounts').style.display=''; $('give-method').hidden=true; $('give-qr').hidden=true; $('give-thanks').hidden=true;
+  show('s-intro');
+}
+$('go-restart').onclick=goHome;
+['click','touchstart','touchmove','keydown'].forEach(ev=>document.addEventListener(ev,armReturn,{passive:true}));
+/* heartbeat: tell the Worker we're alive, so you're alerted if the kiosk goes silent */
+if(CONFIG.HEARTBEAT_URL){const hb=()=>{try{fetch(CONFIG.HEARTBEAT_URL,{method:'POST',keepalive:true}).catch(()=>{});}catch(_){}};hb();setInterval(hb,60000);}
+armReturn();
+
+['in-firstname','in-business'].forEach(id=>$(id).addEventListener('keydown',e=>{if(e.key==='Enter')$('go-draw').click();}));
+['in-lastname','in-email'].forEach(id=>$(id).addEventListener('keydown',e=>{if(e.key==='Enter')$('go-unlock').click();}));
+
+let statusTimer;
+function cycleStatus(){const msgs=STR[lang].status_cycle;let i=0;$('status').textContent=msgs[0];clearInterval(statusTimer);statusTimer=setInterval(()=>{i=(i+1)%msgs.length;$('status').textContent=msgs[i];},1100);}
+
+function revealCard(){
+  clearInterval(statusTimer);
+  $('card-name').textContent=state.card;
+  $('reading-el').innerHTML=emphasizeName(state.reading,state.firstName);
+  $('future-el').innerHTML=escapeHtml(state.future);
+  $('stage').classList.remove('is-loading');
+  $('card3d').classList.add('is-flipped');
+  const reveal=()=>{$('reading-text').hidden=false;$('go-gate').hidden=false;};
+  reduceMotion?reveal():setTimeout(reveal,780);
+}
+
+async function getFortune(firstName,business){
+  if(DEMO){await wait(1900);return demoFortune(firstName,business,lang);}
+  await wait(500);
+  const r=await fetch(CONFIG.PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({firstName,business,lang})});
+  if(!r.ok) throw new Error('proxy '+r.status);
+  const data=await r.json();
+  if(data&&data.card) return {card:data.card,reading:data.reading||'',future:data.future||''};
+  return parseFortune(data.text||'');
+}
+function parseFortune(text){
+  const lines=text.trim().split('\n').map(s=>s.trim()).filter(Boolean);
+  let card='Your Reading',rest=text.trim();
+  const idx=lines.findIndex(l=>/^the card\s*[—-]/i.test(l));
+  if(idx>-1){card=lines[idx].replace(/^the card\s*[—-]\s*/i,'').trim();rest=lines.slice(idx+1).join(' ');}
+  const m=rest.match(/(.*?)(\b(?:picture|imagine)\b.*)/is);
+  if(m&&m[2]) return {card,reading:m[1].trim(),future:m[2].trim()};
+  return {card,reading:rest,future:''};
+}
+async function sendLead(){
+  const payload={firstName:state.firstName,lastName:state.lastName,email:state.email,business:state.business,card:state.card,fortune:`${state.reading}\n\n${state.future}`,code:CONFIG.DISCOUNT_CODE};
+  if(!CONFIG.LEAD_URL){await wait(800);return;}
+  try{await fetch(CONFIG.LEAD_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});}catch(_){}
+}
+function demoFortune(firstName,business,lang){
+  const b=business.toLowerCase();
+  if(lang==='es') return demoFortuneES(firstName,b);
+  const T=[
+    {k:['candle','soap','jewel','print','ceramic','craft','make','handmade','goods','shop','art'],card:'The Dispatcher',reading:`${firstName}, the making is the joy — what quietly burns you out is everything that happens after someone clicks buy.`,future:`Picture the version where AI catches each order, prints the packing slip and shipping label, drops your stock count, and texts the customer their tracking — before you've finished the next one.`},
+    {k:['skincare','beauty','serum','cosmetic','supplement','wellness','brand','dtc','ecom','product'],card:'The Stockkeeper',reading:`${firstName}, the product is real and the bottle is beautiful — what's leaking time is the warehouse work no one warned you about.`,future:`Picture the version where AI turns every order into a printed label and a tracking text on its own, watches your batch counts, and flags a reorder before you sell out of the thing everyone wants.`},
+    {k:['photo','video','film','design','wedding','event','creative','studio'],card:'The Scheduler',reading:`${firstName}, you sell the way a moment feels — but you're losing nights to logistics, not to your craft.`,future:`Picture the version where AI runs your booking from first inquiry to confirmed date, checking your calendar, holding the slot, and sending the contract and reminders — so you wake to a filled schedule, not a full inbox.`},
+    {k:['bak','cater','food','restaurant','cafe','kitchen','meal','chef','treat'],card:'The Estimator',reading:`${firstName}, the food sells itself; it's the catering and quotes that eat your evenings.`,future:`Picture the version where AI takes each request, turns it into a priced quote, checks the date against your schedule, and hands you the prep-and-shopping list for the week — so a big order is one tap, not one headache.`},
+    {k:['book','account','tax','consult','coach','legal','admin','service','bookkeep','finance'],card:'The Right Hand',reading:`${firstName}, you bring order to everyone else's chaos while your own pipeline runs on sticky notes.`,future:`Picture the version where AI runs your client intake end to end — collecting documents, setting up the file, queueing the recurring tasks — so onboarding someone takes an afternoon, not a week of back-and-forth.`},
+    {k:['idea','haven','starting','start','launch','thinking','dream','someday','pre'],card:'The Scout',reading:`${firstName}, you're at the honest part — the idea is warm and nothing's been promised to anyone yet.`,future:`Picture the version where AI pressure-tests it before you spend a dollar — sizing who'd actually buy, scouting three suppliers, scoping what's already out there, and handing you a two-week plan to land your first ten customers.`}
+  ];
+  let pick=T.find(t=>t.k.some(w=>b.includes(w)));
+  if(!pick) pick={card:'The Personal Assistant',reading:`${firstName}, you carry more of this than anyone sees — the work that matters keeps getting buried under the work that just has to get done.`,future:`Picture the version where AI quietly handles the repeat tasks eating your week — the follow-ups, the admin, the messages that never make the list — so the hours come back to you.`};
+  return {card:pick.card,reading:pick.reading,future:pick.future};
+}
+function demoFortuneES(firstName,b){
+  const T=[
+    {k:['vela','jabón','jabon','joya','imprime','cerámic','ceramic','artesan','hecho a mano','tienda','arte'],card:'La Despachadora',reading:`${firstName}, hacer es la parte que amas — lo que te agota en silencio es todo lo que pasa después de que alguien hace clic en comprar.`,future:`Imagina la versión donde la IA toma cada pedido, imprime el comprobante y la etiqueta de envío, descuenta tu inventario y le avisa al cliente su seguimiento — antes de que termines el siguiente.`},
+    {k:['piel','belleza','suero','cosmétic','cosmetic','suplement','bienestar','marca','producto'],card:'La Almacenista',reading:`${firstName}, el producto es real y el frasco es hermoso — lo que te quita tiempo es el trabajo de bodega que nadie te advirtió.`,future:`Imagina la versión donde la IA convierte cada pedido en una etiqueta y un mensaje de seguimiento por su cuenta, vigila tus lotes y te avisa que repongas antes de que se agote lo que todas quieren.`},
+    {k:['foto','video','vídeo','boda','evento','creativ','estudio','diseñ'],card:'La Agenda',reading:`${firstName}, vendes cómo se siente un momento — pero pierdes noches en logística, no en tu oficio.`,future:`Imagina la versión donde la IA lleva tus reservas desde la primera consulta hasta la fecha confirmada, revisa tu calendario, aparta el lugar y envía el contrato y los recordatorios — y despiertas con la agenda llena, no con el correo lleno.`},
+    {k:['pan','pastel','cater','comida','restaurante','café','cafe','cocina','chef','postre'],card:'La Cotizadora',reading:`${firstName}, la comida se vende sola; son el catering y las cotizaciones los que se comen tus noches.`,future:`Imagina la versión donde la IA toma cada solicitud, la convierte en una cotización con precio, revisa la fecha contra tu agenda y te entrega la lista de preparación y compras de la semana — y un pedido grande es un toque, no un dolor de cabeza.`},
+    {k:['libro','contab','impuesto','consult','coach','legal','admin','servicio','finanz','asesor'],card:'La Mano Derecha',reading:`${firstName}, pones orden en el caos de todos los demás mientras tu propio negocio corre con notas adhesivas.`,future:`Imagina la versión donde la IA lleva el alta de tus clientes de principio a fin — junta los documentos, arma el expediente, programa las tareas recurrentes — y sumar a alguien toma una tarde, no una semana de idas y vueltas.`},
+    {k:['idea','empez','empiez','comenz','lanzar','lanz','sueñ','algún día','algun dia'],card:'La Exploradora',reading:`${firstName}, estás en la parte honesta — la idea está tibia y todavía no le prometiste nada a nadie.`,future:`Imagina la versión donde la IA la pone a prueba antes de gastar un peso — midiendo quién compraría de verdad, explorando tres proveedores, viendo qué ya existe, y entregándote un plan de dos semanas para conseguir tus primeros diez clientes.`}
+  ];
+  let pick=T.find(t=>t.k.some(w=>b.includes(w)));
+  if(!pick) pick={card:'La Asistente Personal',reading:`${firstName}, cargas más de esto de lo que se nota — el trabajo que importa queda enterrado bajo el trabajo que solo hay que sacar.`,future:`Imagina la versión donde la IA se encarga en silencio de las tareas repetidas que se comen tu semana — los seguimientos, lo administrativo, los mensajes que nunca entran a la lista — y las horas vuelven a ti.`};
+  return {card:pick.card,reading:pick.reading,future:pick.future};
+}
+function wait(ms){return new Promise(r=>setTimeout(r,ms));}
+function escapeHtml(s){return (s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function emphasizeName(text,name){const safe=escapeHtml(text);if(!name)return safe;const n=escapeHtml(name).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');return safe.replace(new RegExp('(^|\\b)('+n+')(\\b|,)','i'),(m,a,b,c)=>a+'<span class="nm">'+b+'</span>'+c);}
+</script>
+</body>
+</html>
