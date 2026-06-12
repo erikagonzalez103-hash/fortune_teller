@@ -354,10 +354,10 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 <script>
 const CONFIG = {
   DISCOUNT_CODE:'HERHOUSE',
-  PROXY_URL:'',
-  LEAD_URL:'',
-  HEARTBEAT_URL:'',       // Worker /heartbeat — kiosk pings every ~60s so you're alerted if it goes silent
-  DONATE_URL:'',          // Worker route: POST {amount} -> {url} (Stripe Checkout). Empty -> links or demo.
+  PROXY_URL:'https://founder-fortune.erikagonzalez103.workers.dev/fortune',
+  LEAD_URL:'https://founder-fortune.erikagonzalez103.workers.dev/lead',
+  HEARTBEAT_URL:'https://founder-fortune.erikagonzalez103.workers.dev/heartbeat',  // kiosk pings every ~60s so you're alerted if it goes silent
+  DONATE_URL:'',          // Worker route: POST {amount} -> {url} (Stripe Checkout). Empty -> links or demo. Flip on in the Stripe phase.
   STRIPE_LINKS:{},        // optional per-amount Stripe Payment Links, e.g. {5:'https://...',10:'https://...'}
   STRIPE_DONATION_URL:'', // optional single custom-amount link (used for "Other" + fallback)
   IDLE_SECONDS:60,        // return to the start screen after this many seconds of no touch
