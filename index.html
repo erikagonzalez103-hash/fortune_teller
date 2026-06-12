@@ -163,14 +163,15 @@
     </span>
   </div>
 
-  <div id="lang-pick" style="display:flex;gap:12px;justify-content:flex-end;align-items:center;margin-top:8px;font:600 12px/1 'Cinzel',serif;letter-spacing:.1em;text-transform:uppercase;">
-    <button type="button" data-lang="en" style="background:none;border:none;color:var(--sage-deep);cursor:pointer;font:inherit;letter-spacing:inherit;text-transform:inherit;padding:4px 2px;">English</button>
-    <span style="color:var(--sage);opacity:.45;">·</span>
-    <button type="button" data-lang="es" style="background:none;border:none;color:var(--sage-deep);cursor:pointer;font:inherit;letter-spacing:inherit;text-transform:inherit;padding:4px 2px;opacity:.45;">Español</button>
-  </div>
-
   <!-- 1 · INTRO -->
   <section class="screen is-active" id="s-intro">
+
+    <div id="lang-pick" style="display:flex;gap:12px;justify-content:flex-end;align-items:center;margin-top:8px;font:600 12px/1 'Cinzel',serif;letter-spacing:.1em;text-transform:uppercase;">
+      <button type="button" data-lang="en" style="background:none;border:none;color:var(--sage-deep);cursor:pointer;font:inherit;letter-spacing:inherit;text-transform:inherit;padding:4px 2px;">English</button>
+      <span style="color:var(--sage);opacity:.45;">·</span>
+      <button type="button" data-lang="es" style="background:none;border:none;color:var(--sage-deep);cursor:pointer;font:inherit;letter-spacing:inherit;text-transform:inherit;padding:4px 2px;opacity:.45;">Español</button>
+    </div>
+
     <div class="center">
       <span class="eyebrow" data-i18n="eyebrow_intro">A reading for founders</span>
       <h1 class="display" data-i18n-html="h1_intro">Your Founder <em>Fortune</em></h1>
@@ -587,9 +588,9 @@ function cycleStatus(){const msgs=STR[lang].status_cycle;let i=0;$('status').tex
 
 function revealCard(){
   clearInterval(statusTimer);
-  $('card-name').textContent=state.card;
-  $('reading-el').innerHTML=emphasizeName(state.reading,state.firstName);
-  $('future-el').innerHTML=escapeHtml(state.future);
+  $('card-name').textContent=stripMd(state.card);
+  $('reading-el').innerHTML=emphasizeName(stripMd(state.reading),state.firstName);
+  $('future-el').innerHTML=escapeHtml(stripMd(state.future));
   $('stage').classList.remove('is-loading');
   $('card3d').classList.add('is-flipped');
   const reveal=()=>{$('reading-text').hidden=false;$('go-gate').hidden=false;};
@@ -615,7 +616,7 @@ function parseFortune(text){
   return {card,reading:rest,future:''};
 }
 async function sendLead(){
-  const payload={firstName:state.firstName,lastName:state.lastName,email:state.email,business:state.business,card:state.card,fortune:`${state.reading}\n\n${state.future}`,code:CONFIG.DISCOUNT_CODE};
+  const payload={firstName:state.firstName,lastName:state.lastName,email:state.email,business:state.business,card:state.card,fortune:`${stripMd(state.reading)}\n\n${stripMd(state.future)}`,code:CONFIG.DISCOUNT_CODE};
   if(!CONFIG.LEAD_URL){await wait(800);return;}
   try{await fetch(CONFIG.LEAD_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});}catch(_){}
 }
@@ -648,6 +649,13 @@ function demoFortuneES(firstName,b){
   return {card:pick.card,reading:pick.reading,future:pick.future};
 }
 function wait(ms){return new Promise(r=>setTimeout(r,ms));}
+function stripMd(s){return (s||'')
+  .replace(/\*\*([^*]+)\*\*/g,'$1')
+  .replace(/\*([^*]+)\*/g,'$1')
+  .replace(/__([^_]+)__/g,'$1')
+  .replace(/_([^_]+)_/g,'$1')
+  .replace(/`([^`]+)`/g,'$1')
+  .replace(/[*`]/g,'');}
 function escapeHtml(s){return (s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function emphasizeName(text,name){const safe=escapeHtml(text);if(!name)return safe;const n=escapeHtml(name).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');return safe.replace(new RegExp('(^|\\b)('+n+')(\\b|,)','i'),(m,a,b,c)=>a+'<span class="nm">'+b+'</span>'+c);}
 </script>
