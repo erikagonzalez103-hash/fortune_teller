@@ -203,11 +203,11 @@
     <div style="margin-top:10px;">
       <label class="field">
         <span class="field-label" data-i18n="label_first">Your first name</span>
-        <input class="input" id="in-firstname" type="text" autocomplete="given-name" placeholder="e.g. Maya" data-i18n-ph="ph_first" />
+        <input class="input" id="in-firstname" type="text" maxlength="24" autocomplete="given-name" placeholder="e.g. Maya" data-i18n-ph="ph_first" />
       </label>
       <label class="field">
         <span class="field-label" data-i18n="label_build">In a few words, what do you build?</span>
-        <input class="input" id="in-business" type="text" autocomplete="off" placeholder="e.g. a climate-tech startup" data-i18n-ph="ph_build" />
+        <input class="input" id="in-business" type="text" maxlength="100" autocomplete="off" placeholder="e.g. a climate-tech startup" data-i18n-ph="ph_build" />
       </label>
       <p class="err" id="ask-err"></p>
     </div>
@@ -293,11 +293,11 @@
     <p class="lede" style="font-size:18px;margin-bottom:22px;" data-i18n="lede_gate">Both land in your inbox the moment you send.</p>
     <label class="field">
       <span class="field-label" data-i18n="label_last">Last name</span>
-      <input class="input" id="in-lastname" type="text" autocomplete="family-name" placeholder="e.g. Rivera" data-i18n-ph="ph_last" />
+      <input class="input" id="in-lastname" type="text" maxlength="24" autocomplete="family-name" placeholder="e.g. Rivera" data-i18n-ph="ph_last" />
     </label>
     <label class="field">
       <span class="field-label" data-i18n="label_email">Email</span>
-      <input class="input" id="in-email" type="email" inputmode="email" autocomplete="email" placeholder="you@yourbusiness.com" data-i18n-ph="ph_email" />
+      <input class="input" id="in-email" type="email" maxlength="120" inputmode="email" autocomplete="email" placeholder="you@yourbusiness.com" data-i18n-ph="ph_email" />
     </label>
     <p class="err" id="gate-err"></p>
     <div class="grow"></div>
@@ -482,6 +482,8 @@ applyLang(); updateLangUI();
 
 
 const state={firstName:'',lastName:'',email:'',business:'',card:'',reading:'',future:''};
+/* content-safety net: keep the worst inputs off the public screen (mirrors the worker) */
+const BLOCKLIST=/\b(fuck\w*|motherf\w+|sh[i1]t+\w*|bullsh\w+|b[i1]tch\w*|c[uµ]nt\w*|assh[o0]le\w*|jack[a4]ss|d[i1]ckhead|piss\w*|bastard|wh[o0]re|sl[uµ]t\w*|fag\w*|n[i1]gg\w+|sp[i1]ck?|ch[i1]nk|k[i1]ke|g[o0]ok|wetback|tr[a4]nny|ret[a4]rd\w*|rap(e|ed|ing|ist)|molest\w*|nazi\w*|hitler|f(u|ü)hrer|heil|kkk|klan|jihad|terroris)\b/i;
 const $=id=>document.getElementById(id);
 const reduceMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const show=id=>{document.querySelectorAll('.screen').forEach(s=>s.classList.remove('is-active'));$(id).classList.add('is-active');window.scrollTo(0,0);};
@@ -489,9 +491,14 @@ const show=id=>{document.querySelectorAll('.screen').forEach(s=>s.classList.remo
 $('go-ask').onclick=()=>show('s-ask');
 
 $('go-draw').onclick=async()=>{
-  const fn=$('in-firstname').value.trim(), biz=$('in-business').value.trim();
+  const btn=$('go-draw');
+  if(btn.disabled) return;                       // double-tap guard (busy line, impatient taps)
+  const fn=$('in-firstname').value.trim().slice(0,24), biz=$('in-business').value.trim().slice(0,100);
   if(!fn){$('ask-err').textContent=STR[lang].err_firstname;return;}
   if(!biz){$('ask-err').textContent=STR[lang].err_business;return;}
+  if(BLOCKLIST.test(fn)||BLOCKLIST.test(biz)){$('ask-err').textContent=(lang==='es'?'Probemos con otras palabras, por favor.':'Let’s keep it friendly — mind trying different words?');return;}
+  $('ask-err').textContent='';
+  btn.disabled=true;
   state.firstName=fn; state.business=biz;
   $('card3d').classList.remove('is-flipped');
   $('stage').classList.add('is-loading');
@@ -499,6 +506,7 @@ $('go-draw').onclick=async()=>{
   show('s-reading'); cycleStatus();
   try{ const f=await getFortune(fn,biz); Object.assign(state,f); }
   catch(_){ Object.assign(state, demoFortune(fn,biz,lang)); }
+  finally{ btn.disabled=false; }
   revealCard();
 };
 
@@ -536,6 +544,8 @@ $('m-scan').onclick=async()=>{
   showQR(url||CONFIG.SITE_URL, selectedAmount, !url);
 };
 $('qr-done').onclick=()=>thankAndReturn(selectedAmount);
+/* kiosk safety: hide "Enter card here" so the tablet never navigates away to Stripe — donors scan the QR on their own phone */
+if($('m-payhere')) $('m-payhere').style.display='none';
 
 async function resolveCheckoutUrl(amt){
   if(CONFIG.DONATE_URL){try{const r=await fetch(CONFIG.DONATE_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({amount:amt})});const d=await r.json();if(d&&d.url)return d.url;}catch(_){}}
@@ -583,6 +593,7 @@ $('go-restart').onclick=goHome;
 /* heartbeat: tell the Worker we're alive, so you're alerted if the kiosk goes silent */
 if(CONFIG.HEARTBEAT_URL){const did=(new URLSearchParams(location.search).get('id')||'').replace(/[^A-Za-z0-9_-]/g,'').slice(0,24);const hbUrl=CONFIG.HEARTBEAT_URL+(did?('?id='+encodeURIComponent(did)):'');const hb=()=>{try{fetch(hbUrl,{method:'POST',keepalive:true}).catch(()=>{});}catch(_){}};hb();setInterval(hb,60000);}
 armReturn();
+try{flushLeads();}catch(_){}
 
 ['in-firstname','in-business'].forEach(id=>$(id).addEventListener('keydown',e=>{if(e.key==='Enter')$('go-draw').click();}));
 ['in-lastname','in-email'].forEach(id=>$(id).addEventListener('keydown',e=>{if(e.key==='Enter')$('go-unlock').click();}));
@@ -604,7 +615,11 @@ function revealCard(){
 async function getFortune(firstName,business){
   if(DEMO){await wait(1900);return demoFortune(firstName,business,lang);}
   await wait(500);
-  const r=await fetch(CONFIG.PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({firstName,business,lang})});
+  const ctrl=new AbortController();
+  const t=setTimeout(()=>ctrl.abort(),8000);    // fail fast into a reading on flaky wifi (never a frozen card)
+  let r;
+  try{ r=await fetch(CONFIG.PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({firstName,business,lang}),signal:ctrl.signal}); }
+  finally{ clearTimeout(t); }
   if(!r.ok) throw new Error('proxy '+r.status);
   const data=await r.json();
   if(data&&data.card) return {card:data.card,reading:data.reading||'',future:data.future||''};
@@ -619,10 +634,14 @@ function parseFortune(text){
   if(m&&m[2]) return {card,reading:m[1].trim(),future:m[2].trim()};
   return {card,reading:rest,future:''};
 }
+function bufferLead(p){try{const q=JSON.parse(localStorage.getItem('ff_leads')||'[]');q.push(p);localStorage.setItem('ff_leads',JSON.stringify(q.slice(-300)));}catch(_){}}
+async function postLead(p){const r=await fetch(CONFIG.LEAD_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});if(!r.ok)throw new Error('lead '+r.status);let d={};try{d=await r.json();}catch(_){}if(d&&d.stored===false)throw new Error('not stored');}
+async function flushLeads(){let q;try{q=JSON.parse(localStorage.getItem('ff_leads')||'[]');}catch(_){return;}if(!q.length||!CONFIG.LEAD_URL)return;const keep=[];for(const p of q){try{await postLead(p);}catch(_){keep.push(p);}}try{localStorage.setItem('ff_leads',JSON.stringify(keep));}catch(_){}}
 async function sendLead(){
   const payload={firstName:state.firstName,lastName:state.lastName,email:state.email,business:state.business,card:state.card,fortune:`${stripMd(state.reading)}\n\n${stripMd(state.future)}`,code:CONFIG.DISCOUNT_CODE};
   if(!CONFIG.LEAD_URL){await wait(800);return;}
-  try{await fetch(CONFIG.LEAD_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});}catch(_){}
+  try{await postLead(payload);}catch(_){bufferLead(payload);}   // never lose a lead — buffer locally on failure
+  flushLeads();                                                 // retry any previously buffered leads
 }
 function demoFortune(firstName,business,lang){
   const b=business.toLowerCase();
